@@ -72,7 +72,7 @@ econml
 
 1. Download the data, YAML configuration and scripts for the case studies.
 
-2. Edit file paths in configuration_path.yaml and configuration_arg.yaml.
+2. Edit file paths in configuration_path.yaml and configuration_arg.yaml. Others remain default.
 3. Edite YAML configuration paths in the def main() function in both scripts. 
 
 4. Run:
