@@ -416,7 +416,7 @@ def main():
     
     # Optional LODO site grouping (uncomment to enable stricter validation)
     # groups = define_site_groups(X_clean.index, site_mapping=None)
-    # Note: Enabling LODO may change results. Current setup preserves existing results.
+   
     
     top_feats, best_xgb, mean_r2, mean_rmse, train_r2, train_rmse = select_top_chemicals_and_pathways(
         X_clean, Y_clean,
@@ -484,3 +484,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
