@@ -21,7 +21,7 @@ Methodology Highlights:
 
 -Cross-Validation:
 
-  -5-fold, 10-fold, or leave-one-out CV.
+  -5-fold for tunning, 10-fold evaluation, or leave-one-out CV.
   
   -CV R² is reported as the proportion of endpoint variance explained by chemical features within the dataset.
 
@@ -70,11 +70,12 @@ econml
 
 # Instruction
 
-1. Download or prepare data for the case study.
+1. Download the data, YAML configuration and scripts for the case studies.
 
 2. Edit file paths in configuration_path.yaml and configuration_arg.yaml.
+3. Edite YAML configuration paths in the def main() function in both scripts. 
 
-3. Run:
+4. Run:
 
   -case1_path_main.py for pathway case study.
   
