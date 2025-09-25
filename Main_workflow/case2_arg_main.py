@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Yangtze River ARG Shannon Diversity Analysis 
+Yangtze River ARG Shannon Diversity Analysis (LODO Framework)
 ============================================================
 
 Methodology:
@@ -10,8 +10,6 @@ Methodology:
 - LODO validation available
 - Training-CV gap reflects field constraint of limited harmonized datasets
 
-Current implementation preserves existing results while providing
-framework for enhanced validation when needed.
 """
 
 import os
@@ -98,38 +96,43 @@ def evaluate_model_with_cv(model, X, y, cv=10):
 # =====================================================
 """
 LODO (Leave-One-Dataset-Out) validation for respecting site boundaries.
-Uncomment and use when ready to implement stricter validation as mentioned in paper.
+CRITICAL: LODO validation requires explicit assignment of sample names to site groups.
+Current sample names are in SES/SEB format (e.g., SES18, SEB7, SES13, etc.).
+Must create site_mapping dictionary before enabling LODO validation.
 
 def define_site_groups_yangtze(sample_names, site_mapping=None):
     '''
     Define site groups for LODO validation in Yangtze River analysis.
     
-    Example usage for Yangtze River case:
+    Note: LODO validation REQUIRES explicit sample name assignment to site groups.
+    Sample names in this dataset are in SES/SEB format (e.g., SES18, SEB7, SES13).
+    
+    Example usage for actual sample names:
     site_mapping = {
-        'YR01': 'Upper_Yangtze', 'YR02': 'Upper_Yangtze',
-        'YR15': 'Middle_Yangtze', 'YR16': 'Middle_Yangtze',
-        'YR25': 'Lower_Yangtze', 'YR26': 'Lower_Yangtze'
+        'SES18': 'Upper_Yangtze', 'SES13': 'Upper_Yangtze', 'SEB7': 'Upper_Yangtze',
+        'SES19': 'Middle_Yangtze', 'SEB24': 'Middle_Yangtze', 'SES34': 'Middle_Yangtze',
+        'SEB23': 'Lower_Yangtze', 'SES33': 'Lower_Yangtze', 'SES22': 'Lower_Yangtze'
     }
     '''
     if site_mapping is not None:
         groups = [site_mapping.get(sample, 'Unknown') for sample in sample_names]
         return pd.Series(groups, index=sample_names)
     
-    # Auto-detection patterns for Yangtze samples
+    # Auto-detection patterns for SES/SEB samples
+    # Note: Reliable LODO validation requires manual site mapping rather than auto-detection
     if hasattr(sample_names, 'str'):
         patterns = [
-            r'^(YR\d{1,2})',         # YR01, YR02, etc.
+            r'^(SES|SEB)',           # SES or SEB prefix
             r'^([A-Za-z]+\d*)',      # Letters followed by numbers
             r'^(\w+)_',              # Everything before underscore
         ]
         for pattern in patterns:
             potential_groups = sample_names.str.extract(pattern, expand=False)
             if not potential_groups.isna().all() and potential_groups.nunique() > 1:
-                # Group by ranges (e.g., YR01-YR10, YR11-YR20, etc.)
-                if 'YR' in str(potential_groups.iloc[0]):
-                    numeric_part = potential_groups.str.extract(r'YR(\d+)').astype(int)
-                    groups = (numeric_part // 10) * 10  # Group by decades
-                    return pd.Series([f"YR_{g:02d}_{g+9:02d}" for g in groups[0]], index=sample_names)
+                # Basic grouping by SES/SEB prefix (not recommended for actual LODO)
+                if potential_groups.iloc[0] in ['SES', 'SEB']:
+                    print("Warning: Auto-detection found SES/SEB samples. Manual site mapping strongly recommended for LODO.")
+                    return potential_groups
                 return potential_groups
     return None
 
@@ -193,8 +196,9 @@ def select_top_chemicals_and_pathways(X_combined, Y_pathways_log,
     grid_xgb.fit(X_reduced, y_target)
     best_xgb = grid_xgb.best_estimator_
     
-    # Optional LODO site grouping for Yangtze River analysis (uncomment to enable stricter validation)
-    # groups = define_site_groups_yangtze(X_reduced.index, site_mapping=None)
+    # LODO site grouping requires manual sample assignment (uncomment to enable stricter validation)
+    # Must define site_mapping for SES/SEB samples before using LODO validation
+    # groups = define_site_groups_yangtze(X_reduced.index, site_mapping=site_mapping)
     
     
     mean_r2, mean_rmse = evaluate_model_with_cv(best_xgb, X_reduced, y_target, cv=cv)
@@ -354,12 +358,14 @@ def main():
     with open(CONFIG_PATH, "r") as file:
         config = yaml.safe_load(file)
     
-    # Optional: Define site mapping for LODO validation (uncomment to enable)
-    # Example for Yangtze River analysis:
+    # LODO validation REQUIRES explicit sample name assignment to site groups
+    # Sample names in this dataset: SES18, SES13, SES19, SES11, SES21, SES25, SEB24, etc.
+    # Example site mapping for actual SES/SEB samples (MUST be customized based on sampling locations):
     # site_mapping = {
-    #     'YR01': 'Upper_Yangtze', 'YR02': 'Upper_Yangtze', 'YR03': 'Upper_Yangtze',
-    #     'YR15': 'Middle_Yangtze', 'YR16': 'Middle_Yangtze', 'YR17': 'Middle_Yangtze',
-    #     'YR25': 'Lower_Yangtze', 'YR26': 'Lower_Yangtze', 'YR27': 'Lower_Yangtze'
+    #     'SES18': 'Upper_Site', 'SES13': 'Upper_Site', 'SEB7': 'Upper_Site', 'SES19': 'Upper_Site',
+    #     'SEB24': 'Middle_Site', 'SES34': 'Middle_Site', 'SEB23': 'Middle_Site', 'SES33': 'Middle_Site',
+    #     'SES22': 'Lower_Site', 'SEB35': 'Lower_Site', 'SEB3': 'Lower_Site', 'SES17': 'Lower_Site'
+    #     # ... assign remaining samples: SES11, SES21, SES25, SEB18, SEB2, SEB12, etc.
     # }
  
     
@@ -494,5 +500,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
