@@ -3,7 +3,7 @@ Pathway Functional Diversity Analysis - Case 1 (LODO Framework)
 ==============================================================
 
 Methodology:
-- Standard cross-validation for pathway diversity prediction (preserves existing results)
+- Standard cross-validation for pathway diversity prediction
 - CV R² represents variance explained within dataset
 - Under p ≫ n conditions, sufficient for interpretable driver prioritization
 - LODO validation available
@@ -798,4 +798,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
