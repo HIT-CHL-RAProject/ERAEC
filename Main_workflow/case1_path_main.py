@@ -3,10 +3,10 @@ Pathway Functional Diversity Analysis - Case 1 (LODO Framework)
 ==============================================================
 
 Methodology:
-- Standard cross-validation for pathway diversity prediction
+- Standard cross-validation for pathway diversity prediction (preserves existing results)
 - CV R² represents variance explained within dataset
 - Under p ≫ n conditions, sufficient for interpretable driver prioritization
-- LODO validation available
+- LODO validation available (commented) for future stricter validation
 - Training-CV gap reflects field constraint of limited harmonized datasets
 
 Current implementation preserves existing results while providing
@@ -293,32 +293,44 @@ def evaluate_model_with_cv(model, X, y, cv=10):
 ##############################################################################
 """
 LODO (Leave-One-Dataset-Out) validation for respecting site boundaries.
-Uncomment and use when ready to implement stricter validation as mentioned in paper.
+CRITICAL: LODO validation requires explicit assignment of sample names to geographic regions.
+Current sample names are location-based (sample_GZ1, sample_LY1, sample_HB1, etc.).
+Must create site_mapping dictionary with proper geographic groupings before enabling LODO validation.
 
 def define_site_groups_pathways(sample_names, site_mapping=None):
     '''
     Define site groups for LODO validation in pathway analysis.
     
-    Example usage for pathway case:
+    Note: LODO validation REQUIRES explicit sample name assignment to site groups.
+    Sample names in this dataset are location-based: sample_GZ1, sample_LY1, sample_HB1, etc.
+    
+    Example usage for actual sample names (geographic regions):
     site_mapping = {
-        'Leachate_01': 'Landfill_Site_A', 'Leachate_02': 'Landfill_Site_A',
-        'Control_01': 'Control_Site', 'Control_02': 'Control_Site'
+        'sample_GZ1': 'South_China', 'sample_LY1': 'Central_China', 'sample_HB1': 'Central_China',
+        'sample_WH1': 'Central_China', 'sample_JN1': 'East_China', 'sample_QY1': 'East_China',
+        'sample_AS1': 'East_China', 'sample_BJ1': 'North_China', 'sample_XZ1': 'West_China',
+        'sample_QQ1': 'Northeast', 'sample_SZ1': 'South_China', 'sample_XA1': 'Northwest',
+        'sample_TY1': 'North_China', 'sample_SH1': 'East_China', 'sample_CQ1': 'Southwest',
+        'sample_LZ1': 'Northwest', 'sample_PC1': 'East_China'
     }
     '''
     if site_mapping is not None:
         groups = [site_mapping.get(sample, 'Unknown') for sample in sample_names]
         return pd.Series(groups, index=sample_names)
     
-    # Auto-detection patterns for pathway samples
+    # Auto-detection patterns for sample_XX1 format
+    # Note: Reliable LODO validation requires manual site mapping rather than auto-detection
     if hasattr(sample_names, 'str'):
         patterns = [
-            r'^([A-Za-z]+)',      # Letters at start (Leachate, Control, etc.)
+            r'^sample_([A-Z]+)',  # Extract city codes: GZ, LY, HB, WH, etc.
             r'^(\w+)_',           # Everything before first underscore
             r'^(.{2,4})\d',       # 2-4 characters followed by numbers
         ]
         for pattern in patterns:
             potential_groups = sample_names.str.extract(pattern, expand=False)
             if not potential_groups.isna().all() and potential_groups.nunique() > 1:
+                if 'sample_' in str(sample_names.iloc[0]):
+                    print("Warning: Auto-detection found sample_XX1 format. Manual geographic mapping strongly recommended for LODO.")
                 return potential_groups
     return None
 
@@ -405,8 +417,9 @@ def select_top_chemicals_and_pathways(
     grid_xgb.fit(X_reduced, y_summed)
     best_xgb = grid_xgb.best_estimator_
 
-    # Optional LODO site grouping for pathway analysis (uncomment to enable stricter validation)
-    # groups = define_site_groups_pathways(X_reduced.index, site_mapping=None)
+    # LODO site grouping requires manual sample assignment (uncomment to enable stricter validation)
+    # Must define site_mapping for sample_XX1 format before using LODO validation
+    # groups = define_site_groups_pathways(X_reduced.index, site_mapping=site_mapping)
 
     
     mean_r2, mean_rmse = evaluate_model_with_cv(best_xgb, X_reduced, y_summed, cv=cv)
@@ -712,13 +725,18 @@ def main():
     out_dir = config["data"]["output_dir"]
     os.makedirs(out_dir, exist_ok=True)
     
-    # Optional: Define site mapping for LODO validation (uncomment to enable)
-    # Example for pathway analysis:
+    # LODO validation REQUIRES explicit sample name assignment to geographic regions
+    # Sample names: sample_GZ1, sample_LY1, sample_HB1, sample_WH1, sample_JN1, etc.
+    # Example site mapping for actual location-based samples (MUST be customized by geography):
     # site_mapping = {
-    #     'Leachate_01': 'Landfill_Site_A', 'Leachate_02': 'Landfill_Site_A',
-    #     'Control_01': 'Control_Site', 'Control_02': 'Control_Site'
+    #     'sample_GZ1': 'South_China', 'sample_LY1': 'Central_China', 'sample_HB1': 'Central_China',
+    #     'sample_WH1': 'Central_China', 'sample_JN1': 'East_China', 'sample_QY1': 'East_China',
+    #     'sample_AS1': 'East_China', 'sample_BJ1': 'North_China', 'sample_XZ1': 'West_China',
+    #     'sample_QQ1': 'Northeast', 'sample_SZ1': 'South_China', 'sample_XA1': 'Northwest',
+    #     'sample_TY1': 'North_China', 'sample_SH1': 'East_China', 'sample_CQ1': 'Southwest',
+    #     'sample_LZ1': 'Northwest', 'sample_PC1': 'East_China'
     # }
-
+    
 
     # 2) Load & Preprocess
     X_combined, Y_pathways_log = load_and_preprocess_data_for_pathways(config)
@@ -798,5 +816,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
