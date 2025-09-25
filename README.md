@@ -11,7 +11,7 @@ Key Objectives
 
 Methodology Highlights:
 
--Preprocessing:  
+- Preprocessing:  
 
   - Log-transform and normalize concentration/PNEC ratios or concentrations, depending on YAML configuration files.
   
@@ -19,14 +19,14 @@ Methodology Highlights:
   
   - Filter out low-detection features.
 
--Cross-Validation:
+- Cross-Validation:
   - 5-fold cross-validation for both hyperparameter tuning and model evaluation
   - Leave-One-Dataset-Out (LODO) cross-validation available to respect site boundaries
   - Interpretation: CV R² represents variance explained within dataset under p ≫ n conditions, indicating reproducible structure sufficient for interpretable candidate driver prioritization
   - Future Enhancement: Stricter validation (fully nested CV, external test sets) appropriate as larger, paired datasets become available
 
 
--Interpretability:
+Interpretability:
 
   - XGBoost feature importance.
   
@@ -36,9 +36,11 @@ Methodology Highlights:
 
 Case Studies:
 
-- Landfill Leachate: Highly contaminated environment analyzed for carbon/nitrogen metabolic pathways.
+- Case1_leachate:
+    - Landfill Leachate: Highly contaminated environment analyzed for carbon/nitrogen metabolic pathways.
 
-- Yangtze River Sediment: Broader antibiotic and heavy metal contamination profiles linked to ARG dissemination.
+- Case2_arg:
+    - Yangtze River Sediment: Broader antibiotic and heavy metal contamination profiles linked to ARG dissemination.
 
 # Repository Contents
 
@@ -68,13 +70,13 @@ Installation typically takes 5–10 minutes on a standard desktop (Windows 11, P
 
 2. Edit file paths in configuration_path.yaml and configuration_arg.yaml.
 
-  - Paths must also be updated in the def main() function of both scripts.. 
+  - YAML configuration files should be placed in the same directory with the scripts. 
 
 4. Run:
 
-  -case1_path_main.py for pathway case study.
+  - case1_path_main.py for pathway case study.
   
-  -case2_arg_main.py for ARG case study.
+  - case2_arg_main.py for ARG case study.
 Results (figures, feature rankings, SHAP plots) will be saved automatically.
 
 # Licensing
