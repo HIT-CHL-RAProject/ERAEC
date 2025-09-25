@@ -56,24 +56,19 @@ OS & Environment: Windows 11, Python 3.12.7 (tested on VS Code).
 
 Dependencies (install via pip install -r requirements.txt or individually):
 
-pandas
-numpy
-scikit-learn
-tensorflow
-keras-tuner
-matplotlib
-seaborn
-xgboost
-pyyaml
-networkx
-econml
+```
+pandas numpy scikit-learn xgboost matplotlib seaborn shap pyyaml scipy networkx brokenaxes torch
+```
+
+Installation typically takes 5–10 minutes on a standard desktop (Windows 11, Python 3.12.7). Running either case study completes in under 10 minutes with the provided demo data.
 
 # Instruction
 
-1. Download the data, YAML configuration and scripts for the case studies.
+1. Download the data from data/, YAML configuration and scripts for the case studies from Main_workflow/.
 
-2. Edit file paths in configuration_path.yaml and configuration_arg.yaml. Others remain default.
-3. Edite YAML configuration paths in the def main() function in both scripts. 
+2. Edit file paths in configuration_path.yaml and configuration_arg.yaml.
+
+  - Paths must also be updated in the def main() function of both scripts.. 
 
 4. Run:
 
@@ -81,6 +76,10 @@ econml
   
   -case2_arg_main.py for ARG case study.
 Results (figures, feature rankings, SHAP plots) will be saved automatically.
+
+# Licensing
+
+License: MIT License (OSI-approved). See LICENSE file for details.
 
 # Contact & Contributing
 
