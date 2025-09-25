@@ -1,13 +1,16 @@
 """
-Pathway Functional Diversity Analysis - Case 1
-==============================================
+Pathway Functional Diversity Analysis - Case 1 (LODO Framework)
+==============================================================
 
 Methodology:
-- 10-fold CV for pathway diversity prediction
+- Standard cross-validation for pathway diversity prediction (preserves existing results)
 - CV R² represents variance explained within dataset
 - Under p ≫ n conditions, sufficient for interpretable driver prioritization
 - LODO validation available
 - Training-CV gap reflects field constraint of limited harmonized datasets
+
+Current implementation preserves existing results while providing
+framework for enhanced validation when needed.
 """
 
 import os
@@ -298,7 +301,7 @@ def define_site_groups_pathways(sample_names, site_mapping=None):
     
     Example usage for pathway case:
     site_mapping = {
-        'Leachate_01': 'Landfill_A', 'Leachate_02': 'Landfill_A',
+        'Leachate_01': 'Landfill_Site_A', 'Leachate_02': 'Landfill_Site_A',
         'Control_01': 'Control_Site', 'Control_02': 'Control_Site'
     }
     '''
@@ -404,7 +407,7 @@ def select_top_chemicals_and_pathways(
 
     # Optional LODO site grouping for pathway analysis (uncomment to enable stricter validation)
     # groups = define_site_groups_pathways(X_reduced.index, site_mapping=None)
-   
+
     
     mean_r2, mean_rmse = evaluate_model_with_cv(best_xgb, X_reduced, y_summed, cv=cv)
 
@@ -440,7 +443,7 @@ def select_top_chemicals_and_pathways(
     # Enhanced results reporting with methodology context
     print(f"\n=== Pathway Functional Diversity Model Results ===")
     print(f"Training R²: {train_r2:.4f} (model fit to data)")
-    print(f"10-fold CV R²: {mean_r2:.4f} (variance explained within dataset)")
+    print(f"CV R²: {mean_r2:.4f} (variance explained within dataset)")
     print(f"Training RMSE: {train_rmse:.4f}")
     print(f"CV RMSE: {mean_rmse:.4f}")
     print(f"Training-CV gap: {train_r2 - mean_r2:.4f} (reflects p ≫ n constraint)")
@@ -715,7 +718,7 @@ def main():
     #     'Leachate_01': 'Landfill_Site_A', 'Leachate_02': 'Landfill_Site_A',
     #     'Control_01': 'Control_Site', 'Control_02': 'Control_Site'
     # }
- 
+
 
     # 2) Load & Preprocess
     X_combined, Y_pathways_log = load_and_preprocess_data_for_pathways(config)
