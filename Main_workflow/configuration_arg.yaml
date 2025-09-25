@@ -1,9 +1,9 @@
 data:
-  chemical_path: "..." # The path of yangtze_antibiotics_ngg.xlsx 
-  metal_path: "..."
-  arg_path: "..."
-  shannon_path: "..."
-  ecological_path: "..."
+  chemical_path: "F:/ERAEC_Project/datasets/yangtze_antibiotics_ngg.xlsx" # Replace your own paths
+  metal_path: "F:/ERAEC_Project/datasets/yangtze_metal_mgkg.xlsx"
+  arg_path: "F:/ERAEC_Project/datasets/yangtze_ARGs_RA.xlsx"
+  shannon_path: "F:/ERAEC_Project/datasets/yangtze_Shannon.xlsx"
+  ecological_path: "F:/ERAEC_Project/datasets/yangtze_env.xlsx"
   output_dir: "..."
 
 preprocessing:
@@ -63,3 +63,4 @@ visualization:
 evaluation:
   cross_validation_folds: 10  # Number of folds for cross-validation
   scoring_metrics: ["r2", "rmse"]  # Model evaluation metrics
+
