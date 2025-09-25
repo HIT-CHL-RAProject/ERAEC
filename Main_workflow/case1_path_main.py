@@ -404,7 +404,7 @@ def select_top_chemicals_and_pathways(
 
     # Optional LODO site grouping for pathway analysis (uncomment to enable stricter validation)
     # groups = define_site_groups_pathways(X_reduced.index, site_mapping=None)
-    # Note: Enabling LODO may change results. Current setup preserves existing results.
+   
     
     mean_r2, mean_rmse = evaluate_model_with_cv(best_xgb, X_reduced, y_summed, cv=cv)
 
@@ -715,7 +715,7 @@ def main():
     #     'Leachate_01': 'Landfill_Site_A', 'Leachate_02': 'Landfill_Site_A',
     #     'Control_01': 'Control_Site', 'Control_02': 'Control_Site'
     # }
-    # Note: Enabling LODO may change existing results
+ 
 
     # 2) Load & Preprocess
     X_combined, Y_pathways_log = load_and_preprocess_data_for_pathways(config)
@@ -795,3 +795,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
