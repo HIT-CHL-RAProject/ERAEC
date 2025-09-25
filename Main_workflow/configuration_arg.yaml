@@ -9,17 +9,19 @@ data:
 preprocessing:
   remove_outliers: true   # Remove extreme outliers using PCA + Isolation Forest
   log_transform: true     # Apply log transformation to normalize data
-  min_max_scaling: true   # Scale all independent variables to [0,1] range
-  epsilon: 0.0000001      # Small constant to avoid log(0) issues
-  pca_components: 4       
-  feature_z_threshold: 3  
-  contamination: 0.08      
+  min_max_scaling: true  # Scale all independent variables to [0,1] range
+  log_transform_y: false
+  use_standard_scaler_y: true 
+  epsilon: 0.0000001           # Small constant to avoid log(0) issues
+  pca_components: 4       # Initially 2, changed to 4 and 6
+  feature_z_threshold: 3  # or a lower value if you want stricter feature removal, 3
+  contamination: 0.08      # Increase this to 0.05 (or 0.1) to flag more samples as outliers
 
 feature_selection:
-  method: "rfe"           
-  top_n_chemicals: 20     
-  top_n_metals: 10        
-  top_n_ecological: 5     
+  method: "rfe"           # Recursive Feature Elimination (RFE) using RandomForest
+  top_n_chemicals: 20     # Number of key chemicals selected
+  top_n_metals: 10        # Number of key heavy metals selected
+  top_n_ecological: 5     # Number of key ecological factors selected
 
 clustering:
   method: "pca"           # Use PCA for clustering
@@ -37,7 +39,7 @@ causal_analysis:
 
 shap_analysis:
   max_display: 20         # Number of top SHAP features to display
-  interaction_index: null  
+  interaction_index: "As"  # Set to a feature like "OFL" or keep null for auto
 
 correlation_analysis:
   importance_threshold: 0.02  # Minimum importance score for a feature
@@ -46,18 +48,18 @@ correlation_analysis:
   pval_alpha: 0.05            # P-value cutoff for statistical significance
 
 network_analysis:
-  method: "spearman"       
-  edge_weight_threshold: 0.1  
-  top_n_nodes: 50          
-  save_plots: true         
+  method: "spearman"       # Compute Spearman correlation for network edges
+  edge_weight_threshold: 0.1  # Minimum edge weight for inclusion in network
+  top_n_nodes: 50          # Limit the number of nodes in the final network
+  save_plots: true         # Save network plots
 
 visualization:
-  figsize: [20, 15]        
+  figsize: [20, 15]        # Figure size for network plots
   layout: "kamada_kawai"   # Layout options: 'spring', 'circular', 'kamada_kawai'
-  save_pca: true           
-  save_shap: true          
-  save_causal: true        
+  save_pca: true           # Save PCA clustering plots
+  save_shap: true          # Save SHAP summary plots
+  save_causal: true        # Save causal analysis bar plots
 
 evaluation:
-  cross_validation_folds: 10  
-  scoring_metrics: ["r2", "rmse"]  
+  cross_validation_folds: 10  # Number of folds for cross-validation
+  scoring_metrics: ["r2", "rmse"]  # Model evaluation metrics
