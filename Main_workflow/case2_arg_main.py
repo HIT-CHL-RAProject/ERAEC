@@ -1,13 +1,17 @@
+# -*- coding: utf-8 -*-
 """
-ARG Shannon Diversity Analysis - Case 2
-=======================================
+Yangtze River ARG Shannon Diversity Analysis 
+============================================================
 
 Methodology:
-- 5-fold CV for reproducible structure assessment
-- CV R² (0.39-0.44) represents variance explained within dataset
-- Under p ≫ n conditions, sufficient for interpretable driver prioritization  
+- Standard cross-validation for ARG diversity prediction 
+- CV R² represents variance explained within dataset
+- Under p ≫ n conditions, sufficient for interpretable driver prioritization
 - LODO validation available
 - Training-CV gap reflects field constraint of limited harmonized datasets
+
+Current implementation preserves existing results while providing
+framework for enhanced validation when needed.
 """
 
 import os
@@ -74,9 +78,8 @@ def detect_and_remove_outliers(X_combined_features, config):
     
     return X_clean, inlier_indices
 
-
 # =====================================================
-# 2. Evaluate Model with k-fold CV
+# 2. Evaluate Model with CV
 # =====================================================
 def evaluate_model_with_cv(model, X, y, cv=10):
     """
@@ -97,36 +100,46 @@ def evaluate_model_with_cv(model, X, y, cv=10):
 LODO (Leave-One-Dataset-Out) validation for respecting site boundaries.
 Uncomment and use when ready to implement stricter validation as mentioned in paper.
 
-def define_site_groups(sample_names, site_mapping=None):
+def define_site_groups_yangtze(sample_names, site_mapping=None):
     '''
-    Define site groups for LODO validation.
+    Define site groups for LODO validation in Yangtze River analysis.
     
-    Example usage:
+    Example usage for Yangtze River case:
     site_mapping = {
-        'YR01': 'Site_A', 'YR02': 'Site_A',
-        'TZ01': 'Site_B', 'TZ02': 'Site_B'
+        'YR01': 'Upper_Yangtze', 'YR02': 'Upper_Yangtze',
+        'YR15': 'Middle_Yangtze', 'YR16': 'Middle_Yangtze',
+        'YR25': 'Lower_Yangtze', 'YR26': 'Lower_Yangtze'
     }
     '''
     if site_mapping is not None:
         groups = [site_mapping.get(sample, 'Unknown') for sample in sample_names]
         return pd.Series(groups, index=sample_names)
     
-    # Auto-detection patterns
+    # Auto-detection patterns for Yangtze samples
     if hasattr(sample_names, 'str'):
-        patterns = [r'^([A-Za-z]+\d*)', r'^(\w+)_', r'^(.{2,3})\d']
+        patterns = [
+            r'^(YR\d{1,2})',         # YR01, YR02, etc.
+            r'^([A-Za-z]+\d*)',      # Letters followed by numbers
+            r'^(\w+)_',              # Everything before underscore
+        ]
         for pattern in patterns:
             potential_groups = sample_names.str.extract(pattern, expand=False)
             if not potential_groups.isna().all() and potential_groups.nunique() > 1:
+                # Group by ranges (e.g., YR01-YR10, YR11-YR20, etc.)
+                if 'YR' in str(potential_groups.iloc[0]):
+                    numeric_part = potential_groups.str.extract(r'YR(\d+)').astype(int)
+                    groups = (numeric_part // 10) * 10  # Group by decades
+                    return pd.Series([f"YR_{g:02d}_{g+9:02d}" for g in groups[0]], index=sample_names)
                 return potential_groups
     return None
 
-def evaluate_model_with_lodo(model, X, y, groups):
+def evaluate_model_with_lodo_yangtze(model, X, y, groups):
     '''
-    LODO evaluation respecting site boundaries to reduce data leakage.
+    LODO evaluation for Yangtze River analysis respecting site boundaries.
     '''
     if groups is None:
         print("No groups provided, using standard CV")
-        return evaluate_model_with_cv(model, X, y, cv=5)
+        return evaluate_model_with_cv(model, X, y, cv=10)
     
     logo = LeaveOneGroupOut()
     rmse_scorer = make_scorer(lambda yt, yp: np.sqrt(mean_squared_error(yt, yp)), greater_is_better=False)
@@ -158,16 +171,9 @@ def select_features_with_rfe(X_combined_features, y_summed, n_top_chemicals):
 def select_top_chemicals_and_pathways(X_combined, Y_pathways_log,
                                       n_top_chemicals=10, n_top_paths=10,
                                       cv=5, output_dir="./"):
-    """
-    Uses RFE to select top chemical features from X_combined,
-    tunes an XGBoost model via GridSearchCV to predict the target (Shannon),
-    and evaluates using k-fold CV. Plots feature importances.
-    """
-    y_target = Y_pathways_log.squeeze()  # Expecting one-column target (delta Shannon)
-    
+    y_target = Y_pathways_log.squeeze()  # Expecting one-column target (Shannon)   
     top_feats = select_features_with_rfe(X_combined, y_target, n_top_chemicals)
-    X_reduced = X_combined[top_feats]
-    
+    X_reduced = X_combined[top_feats]   
     xgb_model = XGBRegressor(random_state=42, objective="reg:squarederror", eval_metric="rmse")
     param_grid_xgb = {
         'n_estimators': [100, 300, 500],
@@ -186,6 +192,10 @@ def select_top_chemicals_and_pathways(X_combined, Y_pathways_log,
     )
     grid_xgb.fit(X_reduced, y_target)
     best_xgb = grid_xgb.best_estimator_
+    
+    # Optional LODO site grouping for Yangtze River analysis (uncomment to enable stricter validation)
+    # groups = define_site_groups_yangtze(X_reduced.index, site_mapping=None)
+    
     
     mean_r2, mean_rmse = evaluate_model_with_cv(best_xgb, X_reduced, y_target, cv=cv)
     y_train_pred = best_xgb.predict(X_reduced)
@@ -265,9 +275,7 @@ def interpret_model_with_shap_and_pdp(model, X_features, top_chemicals, config):
             plt.yticks(fontsize=18)
             plt.tight_layout()
             plt.savefig(os.path.join(output_dir, f"shap_dependence_{feature}.svg"), dpi=300)
-            plt.close()
-
-        
+            plt.close()       
     except Exception as e:
         print(f"SHAP analysis failed: {e}")
     
@@ -287,11 +295,11 @@ def interpret_model_with_shap_and_pdp(model, X_features, top_chemicals, config):
             print(f"PDP generation failed for {chemical}: {e}")
 
 # =====================================================
-# 6. Network Analysis for ARG
+# 6. Network Analysis for ARG MAIN RESULT
 # =====================================================
 def network_analysis_for_args(X_features, arg_df, top_n=20, output_dir="./"):
     """
-    Selects the top_n ARGs by average abundance,
+    Selects the top_n ARGs by average abundance (from arg_df),
     computes Spearman correlations between each feature in X_features and each selected ARG,
     and plots a heatmap of the correlations.
     Only correlations with p < 0.05 are kept.
@@ -316,8 +324,7 @@ def network_analysis_for_args(X_features, arg_df, top_n=20, output_dir="./"):
             else:
                 correlations.loc[feature, arg] = np.nan  # or 0, if preferred
                 
-    correlations = correlations.astype(float)
-    
+    correlations = correlations.astype(float)    
     # Plot heatmap
     plt.figure(figsize=(12, 10))
     ax = sns.heatmap(
@@ -325,8 +332,8 @@ def network_analysis_for_args(X_features, arg_df, top_n=20, output_dir="./"):
         fmt=".2f",  # display 2 decimals for correlation
         cbar_kws={"shrink": 0.8}
     )
-    plt.title("Spearman Correlation (p < 0.05): Features vs. Top ARGs", fontsize=20, pad=15)
-    
+    plt.title("Spearman Correlation (p < 0.05): Features vs. Top ARGs", fontsize=20, pad=15)   
+    # Configure axis ticks and labels
     plt.xticks(rotation=45, ha="right", fontsize=14)
     plt.yticks(fontsize=14)
     plt.xlabel("Top ARGs", fontsize=16, labelpad=10)
@@ -337,16 +344,24 @@ def network_analysis_for_args(X_features, arg_df, top_n=20, output_dir="./"):
     plt.savefig(heatmap_path, format="svg", dpi=300)
     plt.close()
     print(f"Correlation heatmap saved to: {heatmap_path}")
-
-
 # =====================================================
 # 7. Main Workflow
 # =====================================================
 def main():
-    # Load configuration from YAML accordingly
-    CONFIG_PATH = "F:/ERAEC_ARGs/scripts/configuration_arg.yaml" #editted the configuration_arg.yaml path
+    # Load configuration from YAML
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    CONFIG_PATH = os.path.join(script_dir, "configuration_arg.yaml")
     with open(CONFIG_PATH, "r") as file:
         config = yaml.safe_load(file)
+    
+    # Optional: Define site mapping for LODO validation (uncomment to enable)
+    # Example for Yangtze River analysis:
+    # site_mapping = {
+    #     'YR01': 'Upper_Yangtze', 'YR02': 'Upper_Yangtze', 'YR03': 'Upper_Yangtze',
+    #     'YR15': 'Middle_Yangtze', 'YR16': 'Middle_Yangtze', 'YR17': 'Middle_Yangtze',
+    #     'YR25': 'Lower_Yangtze', 'YR26': 'Lower_Yangtze', 'YR27': 'Lower_Yangtze'
+    # }
+ 
     
     # File paths
     chem_path    = config["data"]["chemical_path"]
@@ -363,21 +378,20 @@ def main():
     chem_df  = pd.read_excel(chem_path, index_col=0)
     metal_df = pd.read_excel(metal_path, index_col=0)
     eco_df   = pd.read_excel(eco_path, index_col=0)
-    arg_df   = pd.read_excel(arg_path, index_col=0)  
+    arg_df   = pd.read_excel(arg_path, index_col=0)  # ARG abundance 
     shannon_df = pd.read_excel(shannon_path, index_col=0)  # Shannon index for ARG diversity
     
-   
-    delta_shannon_df = shannon_df[["Shannon"]]
+    # -------------------------------
+    # Here, assume your Shannon file now has a column named "Delta_Shannon"
+    delta_shannon_df = shannon_df[["Delta_Shannon"]]
     if delta_shannon_df.empty:
-        raise ValueError("Shannon dataframe is empty. Check your shannon index file.")
-    
+        raise ValueError("Delta Shannon dataframe is empty. Check your shannon index file.") 
     # -------------------------------
     # Merge Contaminants: Chemicals, Metals, and Ecological Factors
     # -------------------------------
-    X_combined = pd.concat([chem_df, metal_df, eco_df], axis=1)
-    
+    X_combined = pd.concat([chem_df, metal_df, eco_df], axis=1)  
     # -------------------------------
-    # Preprocess X: Log Transformation 
+    # Preprocess X: Log Transformation + Min-Max Scaling
     # -------------------------------
     epsilon = config["preprocessing"]["epsilon"]
     if config["preprocessing"]["log_transform"]:
@@ -389,35 +403,26 @@ def main():
         scaler = MinMaxScaler()
         X_scaled = pd.DataFrame(scaler.fit_transform(X_log), columns=X_log.columns, index=X_log.index)
     else:
-        X_scaled = X_log.copy()
-    
+        X_scaled = X_log.copy()  
     # -------------------------------
-    # Preprocess Y: Use Shannon as Target, then Standardize
+    # Preprocess Y: Use Delta Shannon as Target, then Standardize
     # -------------------------------
     scaler_Y = StandardScaler()
     Y_scaled = pd.DataFrame(scaler_Y.fit_transform(delta_shannon_df), columns=delta_shannon_df.columns, index=delta_shannon_df.index)
     
     # -------------------------------
-    # Outlier Removal
+    # Outlier Removal on X, then align Y accordingly
     # -------------------------------
     X_clean, inlier_indices = detect_and_remove_outliers(X_scaled, config)
-    Y_clean = Y_scaled.loc[X_clean.index]
-    
-    # Save preprocessed data
+    Y_clean = Y_scaled.loc[X_clean.index]   
     preproc_file = os.path.join(output_dir, "preprocessed_data.xlsx")
     with pd.ExcelWriter(preproc_file) as writer:
         X_clean.to_excel(writer, sheet_name="Contaminants", index=True)
         Y_clean.to_excel(writer, sheet_name="Delta_Shannon", index=True)
-    print(f"Preprocessed data saved to: {preproc_file}")
-    
+    print(f"Preprocessed data saved to: {preproc_file}")  
     # -------------------------------
     # Task-Specific Modeling: Predict Shannon from Contaminants
     # -------------------------------
-    
-    # Optional LODO site grouping (uncomment to enable stricter validation)
-    # groups = define_site_groups(X_clean.index, site_mapping=None)
-   
-    
     top_feats, best_xgb, mean_r2, mean_rmse, train_r2, train_rmse = select_top_chemicals_and_pathways(
         X_clean, Y_clean,
         n_top_chemicals=config["feature_selection"]["top_n_chemicals"],
@@ -425,19 +430,22 @@ def main():
         cv=5, output_dir=output_dir
     )
     
-    print("XGBoost CV Mean R²:", mean_r2)
-    print("XGBoost CV Mean RMSE:", mean_rmse)
-    print("Training R²:", train_r2)
-    print("Training RMSE:", train_rmse)
+    # Enhanced results reporting with methodology context
+    print(f"\n=== Yangtze River ARG Shannon Diversity Model Results ===")
+    print(f"Training R²: {train_r2:.4f} (model fit to data)")
+    print(f"CV R²: {mean_r2:.4f} (variance explained within dataset)")
+    print(f"Training RMSE: {train_rmse:.4f}")
+    print(f"CV RMSE: {mean_rmse:.4f}")
+    print(f"Training-CV gap: {train_r2 - mean_r2:.4f} (reflects p ≫ n constraint)")
+    print(f"\nNote: CV R² represents reproducible structure for ARG driver prioritization,")
+    print(f"not predictive accuracy for unseen systems under p ≫ n conditions.")
+    print("=" * 60)
     
-    # -------------------------------
-    # SHAP Analysis & Partial Dependence Plots for Interpretation
-    # -------------------------------
     X_reduced = X_clean[top_feats]
     interpret_model_with_shap_and_pdp(best_xgb, X_reduced, top_feats, config)
     
     # -------------------------------
-    # EDA Analysis: Select Top 20 ARGs and Compute Correlations with Features
+    # Select Top 20 ARGs and Compute Correlations with Features
     # -------------------------------
     arg_df_subset = arg_df.loc[X_clean.index]  
     mean_abundances = arg_df_subset.mean(axis=0)
@@ -454,14 +462,16 @@ def main():
     plt.figure(figsize=(16, 18))
     ax = sns.heatmap(
         correlations, annot=True, cmap="coolwarm", center=0,
-        fmt=".2f",  # Display correlations with 2 decimal places
+        fmt=".2f", 
         cbar_kws={"shrink": 0.8}
     )
     plt.title("Spearman Correlation: Features vs. Top 20 ARGs", fontsize=20, pad=15)
     
+    # Rotate and align x-tick labels for clarity
     ax.set_xticklabels(ax.get_xticklabels(), rotation=45, ha="right", fontsize=14)
     ax.set_yticklabels(ax.get_yticklabels(), rotation=0, fontsize=14)
     
+    # Set axis labels with larger font
     plt.xlabel("Top 20 ARGs", fontsize=16, labelpad=10)
     plt.ylabel("Features", fontsize=16, labelpad=10)
     
@@ -484,4 +494,5 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
