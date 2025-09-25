@@ -5,40 +5,40 @@ This project explores how machine learning (ML) can identify and prioritize emer
 
 Key Objectives
 
--Data Integration: Combine EC concentration data (often scaled by PNEC) with metagenomic or omics-derived endpoints (e.g., ARG abundance, metabolic pathways).
+- Data Integration: Combine EC concentration data (often scaled by PNEC) with metagenomic or omics-derived endpoints (e.g., ARG abundance, metabolic pathways).
 
--Modeling Framework: Apply gradient boosting or random forest models with feature selection, cross-validation, and interpretability tools (SHAP, PDP).
+- Modeling Framework: Apply gradient boosting or random forest models with feature selection, cross-validation, and interpretability tools (SHAP, PDP).
 
 Methodology Highlights:
 
 -Preprocessing:  
 
-  -Log-transform and normalize concentration/PNEC ratios or concentrations, depending on YAML configuration files.
+  - Log-transform and normalize concentration/PNEC ratios or concentrations, depending on YAML configuration files.
   
-  -Normalize biological endpoints, depending on YAML configuration files.
+  - Normalize biological endpoints, depending on YAML configuration files.
   
-  -Filter out low-detection features.
+  - Filter out low-detection features.
 
 -Cross-Validation:
-
-  -5-fold for tunning, 10-fold evaluation, or leave-one-out CV.
-  
-  -CV R² is reported as the proportion of endpoint variance explained by chemical features within the dataset.
+  - 5-fold cross-validation for both hyperparameter tuning and model evaluation
+  - Leave-One-Dataset-Out (LODO) cross-validation available to respect site boundaries
+  - Interpretation: CV R² represents variance explained within dataset under p ≫ n conditions, indicating reproducible structure sufficient for interpretable candidate driver prioritization
+  - Future Enhancement: Stricter validation (fully nested CV, external test sets) appropriate as larger, paired datasets become available
 
 
 -Interpretability:
 
-  -XGBoost feature importance.
+  - XGBoost feature importance.
   
-  -SHAP summary plots.
+  - SHAP summary plots.
   
-  -Partial dependence curves to show concentration–response thresholds.
+  - Partial dependence curves to show concentration–response thresholds.
 
 Case Studies:
 
--Landfill Leachate: Highly contaminated environment analyzed for carbon/nitrogen metabolic pathways.
+- Landfill Leachate: Highly contaminated environment analyzed for carbon/nitrogen metabolic pathways.
 
--Yangtze River Sediment: Broader antibiotic and heavy metal contamination profiles linked to ARG dissemination.
+- Yangtze River Sediment: Broader antibiotic and heavy metal contamination profiles linked to ARG dissemination.
 
 # Repository Contents
 
